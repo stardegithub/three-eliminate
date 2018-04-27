@@ -9,21 +9,21 @@ using UnityEngine.UI;
 public class ItemBase : MonoBehaviour {
 	public int itemRow;//行
 	public int itemColumn;//列
-	public Sprite currentSpr;
-	public Image currentImg;
-	public Util.ItemType currentType;	
+	public Sprite curSpr;
+	public Image curtImg;
+	public Util.ItemType curType;	
 
 	public void Awake()
 	{
-		currentImg = transform.GetChild (0).GetComponent<Image> ();
+		curtImg = transform.GetChild (0).GetComponent<Image> ();
 	}
-	public void Init(int row,int column,Sprite spr)
+	public void Init(int row,int column,Sprite spr,Util.ItemType type)
 	{
 		itemRow = row;
 		itemColumn = column;
-		currentImg.sprite = spr;
-		currentSpr = currentImg.sprite;
-
+		curtImg.sprite = spr;
+		curSpr = curtImg.sprite;
+		curType = type;
 	}
 
 	public virtual void CheckAroundBoom()
@@ -31,9 +31,14 @@ public class ItemBase : MonoBehaviour {
 
 	}
 
-	public  virtual bool IsMoveAroundCanEliminate()
+	public virtual bool IsMoveAroundCanEliminate()
 	{
 		return false;
+	}
+
+	public virtual void EmilinateSelf()
+	{
+
 	}
 
 }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+using Eliminate;
 public class GameController : MonoBehaviour {
 
 	//单例

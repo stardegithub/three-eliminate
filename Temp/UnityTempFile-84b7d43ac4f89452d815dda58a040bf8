@@ -93,6 +93,8 @@
 -define:UNITY_TEAM_LICENSE
 -define:UNITY_PRO_LICENSE
 'Assets/Scripts/Eliminate/AudioManager.cs'
+'Assets/Scripts/Eliminate/EliminateFunc.cs'
+'Assets/Scripts/Eliminate/EliminateInterface.cs'
 'Assets/Scripts/Eliminate/GameController.cs'
 'Assets/Scripts/Eliminate/Item.cs'
 'Assets/Scripts/Eliminate/ItemBase.cs'
