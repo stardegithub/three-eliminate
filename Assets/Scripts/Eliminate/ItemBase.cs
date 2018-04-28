@@ -11,13 +11,13 @@ public class ItemBase : MonoBehaviour {
 	public int itemColumn;//列
 	public Sprite curSpr;
 	public Image curtImg;
-	public Util.ItemType curType;	
+	public Util.EItemType curType;	
 
 	public void Awake()
 	{
 		curtImg = transform.GetChild (0).GetComponent<Image> ();
 	}
-	public void Init(int row,int column,Sprite spr,Util.ItemType type)
+	public void Init(int row,int column,Sprite spr,Util.EItemType type)
 	{
 		itemRow = row;
 		itemColumn = column;
@@ -26,15 +26,15 @@ public class ItemBase : MonoBehaviour {
 		curType = type;
 	}
 
-	public virtual void CheckAroundBoom()
-	{
+	// public virtual void CheckAroundBoom()
+	// {
 
-	}
+	// }
 
-	public virtual bool IsMoveAroundCanEliminate()
-	{
-		return false;
-	}
+	// public virtual bool IsMoveAroundCanEliminate()
+	// {
+	// 	return false;
+	// }
 
 	public virtual void EmilinateSelf()
 	{

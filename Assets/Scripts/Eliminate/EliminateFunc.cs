@@ -9,11 +9,11 @@ namespace Eliminate
     ///</summary>
     public class EliminateFunc : ICheckEliminateAlgorithm
     {
-        public List<Item> SelectEliminateItem(Item[,] allItems)
+        public List<Item> SelectEliminateItemList(List<Item> checkItemList, Item[,] allItems)
         {
             List<Item> ret = new List<Item>();
 
-            foreach (var item in allItems)
+            foreach (var item in checkItemList)
             {
                 //指定位置的Item存在，且没有被检测过
                 if (item && !item.hasCheck)
@@ -22,7 +22,7 @@ namespace Eliminate
                     List<Item> sameItemsList = new List<Item>();
                     FillSameItemsList(ref sameItemsList, item, allItems);
                     var eliminateList = GetEliminateList(item, sameItemsList, allItems);
-                    //避免重复加入列表
+                    // //避免重复加入列表
                     for (int i = 0; i < eliminateList.Count; i++)
                     {
                         if (!ret.Contains(eliminateList[i]))
@@ -30,12 +30,26 @@ namespace Eliminate
                             ret.Add(eliminateList[i]);
                         }
                     }
+					//ret = eliminateList;
                 }
             }
             return ret;
         }
+        public bool IsNextCanEliminate(Item[,] allItems)
+        {
+            foreach (var item in allItems)
+            {
+                if (IsMoveCanEliminate(item, Vector2.up, allItems)
+                || IsMoveCanEliminate(item, Vector2.down, allItems)
+                || IsMoveCanEliminate(item, Vector2.left, allItems)
+                || IsMoveCanEliminate(item, Vector2.right, allItems))
+                {
+                    return true;
+                }
+            }
+            return false;
 
-		
+        }
         /// <summary>
         /// 填充相同Item列表  
         /// </summary>
@@ -121,13 +135,68 @@ namespace Eliminate
                 //将临时列表中的Item全部放入BoomList
                 eliminateList.AddRange(columnTempList);
             }
-            for (int i = 0; i < eliminateList.Count; i++)
-            {
-                eliminateList[i].hasCheck = true;
-            }
+            // for (int i = 0; i < eliminateList.Count && eliminateList.Count > 2; i++)
+            // {
+            //     eliminateList[i].hasCheck = true;
+            // }
             return eliminateList;
         }
 
+        /// <summary>
+        /// 检测item向dir方向移动一格是否可消除
+        /// </summary>
+        /// <returns><c>true</c>, if can boom, <c>false</c> cant boom.</returns>
+        /// <param name="item">Item.</param>
+        /// <param name="dir">vector2.</param>
+        private bool IsMoveCanEliminate(Item item, Vector2 dir, Item[,] allItems)
+        {
+            if (item == null)
+            {
+                Debug.Log("dsfsd");
+            }
+            int tableRow = allItems.GetLength(0);
+            int tableColumn = allItems.GetLength(1);
+            //获取目标行列
+            int targetRow = item.itemRow + System.Convert.ToInt32(dir.y);
+            int targetColumn = item.itemColumn + System.Convert.ToInt32(dir.x);
+            //检测合法
+            bool isLagal = CheckRCLegal(targetRow, targetColumn, tableRow, tableColumn);
+            if (!isLagal)
+            {
+                return false;
+            }
+            //获取目标
+            Item target = allItems[targetRow, targetColumn];
+            //从全局列表中获取当前item，查看是否已经被消除，被消除后不能再交换
+            Item myItem = allItems[item.itemRow, item.itemColumn];
+            if (!target || !myItem)
+            {
+                return false;
+            }
+            //相互移动
+            target. ItemMove(item.itemRow, item.itemColumn, Vector3.zero, false);
+            item. ItemMove(targetRow, targetColumn, Vector3.zero, false);
+
+            //返回值
+            bool isok = true;
+            //消除检测	
+
+            List<Item> sameItemsList = new List<Item>();
+            FillSameItemsList(ref sameItemsList, item, allItems);
+            var eliminateList = GetEliminateList(item, sameItemsList, allItems);
+            isok = eliminateList.Count > 0 ? true : false;
+
+            //还原	
+            //临时行列
+            int tempRow, tempColumn;
+            tempRow = myItem.itemRow;
+            tempColumn = myItem.itemColumn;
+            //移动
+            item. ItemMove(target.itemRow, target.itemColumn, Vector3.zero, false);
+            target. ItemMove(tempRow, tempColumn, Vector3.zero, false);
+
+            return isok;
+        }
 
         /// <summary>
         /// 检测两个Item之间是否有间隙（图案不一致）
@@ -240,5 +309,14 @@ namespace Eliminate
 
 
     }
+
+
+	public class EliminateTypeFunc : ICheckEliminateType
+	{
+		public Util.EEliminateType CheckEliminateType(List<Eliminate.Item> checkItemList,Eliminate.Item[,] allItems)
+		{
+			return Util.EEliminateType.Ltype;
+		}
+	}
 
 }

@@ -21,10 +21,15 @@ using UnityEngine;
 		public static float ItemDropTime = 0.2f;
 
 		//item类型
-		public enum ItemType
+		public enum EItemType
 		{
 			Default = 0,
 			Block,
+		}
+		public enum EEliminateType
+		{
+			Ttype = 0,
+			Ltype,
 		}
 
 	}
