@@ -28,8 +28,11 @@ using UnityEngine;
 		}
 		public enum EEliminateType
 		{
+			Default = -1,
 			Ttype = 0,
 			Ltype,
+			Itype,
+			Xtype,
 		}
 
 	}

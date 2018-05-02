@@ -12,6 +12,8 @@ namespace Eliminate
         public List<Item> SelectEliminateItemList(List<Item> checkItemList, Item[,] allItems)
         {
             List<Item> ret = new List<Item>();
+            EliminateTypeFunc func = new EliminateTypeFunc();
+
 
             foreach (var item in checkItemList)
             {
@@ -28,9 +30,10 @@ namespace Eliminate
                         if (!ret.Contains(eliminateList[i]))
                         {
                             ret.Add(eliminateList[i]);
+                            item.curEliminateType = func.CheckEliminateType(eliminateList[i], eliminateList);
                         }
                     }
-					//ret = eliminateList;
+                    //ret = eliminateList;
                 }
             }
             return ret;
@@ -150,10 +153,7 @@ namespace Eliminate
         /// <param name="dir">vector2.</param>
         private bool IsMoveCanEliminate(Item item, Vector2 dir, Item[,] allItems)
         {
-            if (item == null)
-            {
-                Debug.Log("dsfsd");
-            }
+
             int tableRow = allItems.GetLength(0);
             int tableColumn = allItems.GetLength(1);
             //获取目标行列
@@ -174,8 +174,8 @@ namespace Eliminate
                 return false;
             }
             //相互移动
-            target. ItemMove(item.itemRow, item.itemColumn, Vector3.zero, false);
-            item. ItemMove(targetRow, targetColumn, Vector3.zero, false);
+            target.ItemMove(item.itemRow, item.itemColumn, Vector3.zero, false);
+            item.ItemMove(targetRow, targetColumn, Vector3.zero, false);
 
             //返回值
             bool isok = true;
@@ -192,8 +192,8 @@ namespace Eliminate
             tempRow = myItem.itemRow;
             tempColumn = myItem.itemColumn;
             //移动
-            item. ItemMove(target.itemRow, target.itemColumn, Vector3.zero, false);
-            target. ItemMove(tempRow, tempColumn, Vector3.zero, false);
+            item.ItemMove(target.itemRow, target.itemColumn, Vector3.zero, false);
+            target.ItemMove(tempRow, tempColumn, Vector3.zero, false);
 
             return isok;
         }
@@ -311,12 +311,83 @@ namespace Eliminate
     }
 
 
-	public class EliminateTypeFunc : ICheckEliminateType
-	{
-		public Util.EEliminateType CheckEliminateType(List<Eliminate.Item> checkItemList,Eliminate.Item[,] allItems)
-		{
-			return Util.EEliminateType.Ltype;
-		}
-	}
+    public class EliminateTypeFunc : ICheckEliminateType
+    {
+        public Util.EEliminateType CheckEliminateType(Item curItem, List<Item> checkItemList)
+        {
+            // List<Item> leftList = new List<Item>();
+            // List<Item> rightList = new List<Item>();
+            // List<Item> topList = new List<Item>();
+            // List<Item> bottomList = new List<Item>();
+            int leftNum = 0;
+            int rightNum = 0;
+            int topNum = 0;
+            int bottomNum = 0;
+
+            var curRow = curItem.itemRow;
+            var curCloumn = curItem.itemColumn;
+
+            for (int i = 0; i < checkItemList.Count; i++)
+            {
+                if (checkItemList[i].itemRow == curRow)//同列
+                {
+                    if (checkItemList[i].itemColumn > curCloumn)//右边
+                    {
+                        rightNum++;
+                    }
+                    else if (checkItemList[i].itemColumn < curCloumn)//左边
+                    {
+                        leftNum++;
+                    }
+                }
+                if (checkItemList[i].itemColumn == curCloumn)//同行
+                {
+                    if (checkItemList[i].itemRow > curRow)//上边
+                    {
+                        topNum++;
+                    }
+                    else if (checkItemList[i].itemRow < curRow)//下边
+                    {
+                        bottomNum++;
+                    }
+                }
+            }
+            Util.EEliminateType ret = Util.EEliminateType.Default;
+
+            if (rightNum + leftNum >= 3 || topNum + bottomNum >= 3)//直线型
+            {
+
+                Debug.Log("直线");
+                ret = Util.EEliminateType.Itype;
+            }
+
+            if (rightNum >= 1 && leftNum >= 1 && topNum >= 1 && bottomNum >= 1)//十字
+            {
+                Debug.Log("十字");
+                ret = Util.EEliminateType.Xtype;
+
+            }
+
+            if ((rightNum * leftNum * topNum * bottomNum == 0) &&
+            ((rightNum >= 1 && leftNum >= 1 && topNum + bottomNum >= 2) || topNum >= 1 && bottomNum >= 1 && rightNum + leftNum >= 2))//T字
+            {
+                Debug.Log("t字");
+                ret = Util.EEliminateType.Ttype;
+
+            }
+
+            if ((rightNum >= 2 && leftNum == 0 && topNum >= 2 && bottomNum == 0) ||
+            (rightNum >= 2 && leftNum == 0 && topNum == 0 && bottomNum >= 2) ||
+            (rightNum == 0 && leftNum >= 2 && topNum == 0 && bottomNum >= 2) ||
+            (rightNum == 0 && leftNum >= 2 && topNum >= 2 && bottomNum == 0))//L字
+            {
+                Debug.Log("l字");
+                ret = Util.EEliminateType.Ltype;
+
+            }
+
+            return Util.EEliminateType.Default;
+        }
+    }
 
 }

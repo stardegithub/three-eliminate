@@ -7,49 +7,47 @@ using DG.Tweening;
 
 namespace Eliminate
 {
-    public class Item : ItemBase,IPointerDownHandler, IPointerUpHandler
+    public class Item : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
 
         private ItemManager itemManager;
-        //被检测
-        public bool hasCheck = false;
-        void OnEnable()
-        {
-            itemManager = ItemManager.Instance;
-        }
-        /// <summary>
-        /// 点击事件
-        /// </summary>
-        // public override void CheckAroundBoom()
-        // {
-        // 	itemManager.sameItemsList.Clear ();
-        // 	itemManager.boomList.Clear ();
-        // 	itemManager.FillSameItemsList (this);
-        // 	itemManager.FillBoomList (this);
-        // }
-
-        // public override bool IsMoveAroundCanEliminate()
-        // {
-        // 	itemManager.sameItemsList.Clear ();
-        // 	itemManager.boomList.Clear ();
-        // 	itemManager.FillSameItemsList (this);
-        // 	return itemManager.IsBoomListCanEliminate (this);
-        // }
-        public void Reset()
-        {
-
-        }
-
-        public override void EmilinateSelf()
-        {
-            ObjectPool.instance.ResetGameObject(this.gameObject);
-            hasCheck = false;
-        }
-
         //按下的鼠标坐标
         private Vector3 downPos;
         //抬起的鼠标坐标
         private Vector3 upPos;
+        //被检测
+        public bool hasCheck = false;
+        public int itemRow;//行
+        public int itemColumn;//列
+        public Sprite curSpr;
+        public Image curtImg;
+        public Util.EItemType curType;
+        public Util.EEliminateType curEliminateType;
+
+        public void Awake()
+        {
+            curtImg = transform.GetChild(0).GetComponent<Image>();
+        }
+        public void Init(int row, int column, Sprite spr, Util.EItemType type)
+        {
+            itemRow = row;
+            itemColumn = column;
+            curtImg.sprite = spr;
+            curSpr = curtImg.sprite;
+            curType = type;
+            curEliminateType = Util.EEliminateType.Default;
+        }
+        void OnEnable()
+        {
+            itemManager = ItemManager.Instance;
+        }
+        public void EmilinateSelf()
+        {
+            ObjectPool.instance.ResetGameObject(this.gameObject);
+            hasCheck = false;
+            curEliminateType = Util.EEliminateType.Default;
+
+        }
 
         public void OnPointerDown(PointerEventData eventData)
         {
@@ -110,11 +108,6 @@ namespace Eliminate
             //还原标志位
             bool reduction = false;
 
-
-
-
-
-
             //消除处理
             EliminateFunc func = new EliminateFunc();
             List<Item> checkItemList = new List<Item>();
@@ -130,18 +123,6 @@ namespace Eliminate
             {
                 reduction = true;
             }
-
-
-
-            // if (ItemManager.Instance.boomList.Count == 0)
-            // {
-            //     reduction = true;
-            // }
-            // target.CheckAroundBoom();
-            // if (ItemManager.Instance.boomList.Count != 0)
-            // {
-            //     reduction = false;
-            // }
             //还原
             if (reduction)
             {

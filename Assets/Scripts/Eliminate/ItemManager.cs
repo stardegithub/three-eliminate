@@ -173,8 +173,9 @@ namespace Eliminate
             //回收Item
             foreach (var item in tempBoomList)
             {
-                item.hasCheck = false;
-                ObjectPool.instance.ResetGameObject(item.gameObject);
+				item.EmilinateSelf();
+                //item.hasCheck = false;
+                //ObjectPool.instance.ResetGameObject(item.gameObject);
             }
             //开启下落
             yield return StartCoroutine(ItemsDrop());
