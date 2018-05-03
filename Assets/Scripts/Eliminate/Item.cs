@@ -19,7 +19,7 @@ namespace Eliminate
         public bool hasCheck = false;
         public int itemRow;//行
         public int itemColumn;//列
-        public Sprite curSpr;
+        //public Sprite curSpr;
         public Image curtImg;
         public Util.EItemType curType;
         public Util.EEliminateType curEliminateType;
@@ -28,12 +28,13 @@ namespace Eliminate
         {
             curtImg = transform.GetChild(0).GetComponent<Image>();
         }
-        public void Init(int row, int column, Sprite spr, Util.EItemType type)
+        public void Init(int row, int column, Util.EItemType type)
         {
+            var spr = Util.GetSpriteAssetsByType(type);
             itemRow = row;
             itemColumn = column;
             curtImg.sprite = spr;
-            curSpr = curtImg.sprite;
+//            curSpr = curtImg.sprite;
             curType = type;
             curEliminateType = Util.EEliminateType.Default;
         }
@@ -45,10 +46,9 @@ namespace Eliminate
         {
             ObjectPool.instance.ResetGameObject(this.gameObject);
             hasCheck = false;
+          //  curType = Util.EItemType.Default;
             curEliminateType = Util.EEliminateType.Default;
-
         }
-
         public void OnPointerDown(PointerEventData eventData)
         {
             downPos = Input.mousePosition;

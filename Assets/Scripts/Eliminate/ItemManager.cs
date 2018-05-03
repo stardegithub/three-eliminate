@@ -10,7 +10,7 @@ namespace Eliminate
 
 
         //随机图案
-        public Sprite[] randomSprites;
+        //public Sprite[] randomSprites;
         public Transform itemParent;
         //行列
         public int tableRow = 5;
@@ -56,21 +56,21 @@ namespace Eliminate
                 GetComponent<RectTransform>().rect.height;
         }
 
-        public void LoadResource()
-        {
-            randomSprites = new Sprite[4];
-            randomSprites[0] = Resources.Load<Sprite>("Texture/Gift");
-            randomSprites[1] = Resources.Load<Sprite>("Texture/Health");
-            randomSprites[2] = Resources.Load<Sprite>("Texture/LifePreserver");
-            randomSprites[3] = Resources.Load<Sprite>("Texture/Strawberry");
-        }
+        // public void LoadResource()
+        // {
+        //     randomSprites = new Sprite[4];
+        //     randomSprites[0] = Resources.Load<Sprite>("Texture/Gift");
+        //     randomSprites[1] = Resources.Load<Sprite>("Texture/Health");
+        //     randomSprites[2] = Resources.Load<Sprite>("Texture/LifePreserver");
+        //     randomSprites[3] = Resources.Load<Sprite>("Texture/Strawberry");
+        // }
 
         /// <summary>
         /// 初始化游戏
         /// </summary>
         public void InitGame()
         {
-            LoadResource();
+            //LoadResource();
             //获取Item边长
             itemSize = GetItemSize();
             //生成ITEM
@@ -85,10 +85,10 @@ namespace Eliminate
                     currentItem.transform.localPosition =
                         new Vector3(j * itemSize, i * itemSize, 0) + new Vector3(offset.x, offset.y, 0);
                     //随机图案编号
-                    int random = Random.Range(0, randomSprites.Length);
+                    int random = Random.Range(0, (int)Util.EItemType.Num);
                     //获取Item组件
                     Item current = currentItem.GetComponent<Item>();
-                    current.Init(i, j, randomSprites[random], Util.EItemType.Default);
+                    current.Init(i, j, (Util.EItemType)random);
 
                     //保存到数组
                     allItems[i, j] = current;
@@ -173,7 +173,7 @@ namespace Eliminate
             //回收Item
             foreach (var item in tempBoomList)
             {
-				item.EmilinateSelf();
+                item.EmilinateSelf();
                 //item.hasCheck = false;
                 //ObjectPool.instance.ResetGameObject(item.gameObject);
             }
@@ -253,6 +253,14 @@ namespace Eliminate
                         //生成一个Item
                         GameObject current = ObjectPool.instance.GetGameObject(Util.Item, itemParent);
                         current.transform.position = allPos[tableRow - 1, i];
+                        //随机数
+                        int random = Random.Range(0, (int)Util.EItemType.Num);
+                        current.GetComponent<Item>().Init(tableRow - 1, i, (Util.EItemType)random);
+
+                        // //修改脚本中的图片
+                        // //                    currentItem.curSpr = randomSprites[random];
+                        // //修改真实图片
+                        // currentItem.curtImg.sprite = Util.GetSpriteAssetsByType(currentItem.curType);
                         newItemQueue.Enqueue(current);
                         count++;
                     }
@@ -261,12 +269,7 @@ namespace Eliminate
                 {
                     //获取Item组件
                     Item currentItem = newItemQueue.Dequeue().GetComponent<Item>();
-                    //随机数
-                    int random = Random.Range(0, randomSprites.Length);
-                    //修改脚本中的图片
-                    currentItem.curSpr = randomSprites[random];
-                    //修改真实图片
-                    currentItem.curtImg.sprite = randomSprites[random];
+
                     //获取要移动的行数
                     int r = tableRow - count + k;
                     //移动
@@ -299,12 +302,9 @@ namespace Eliminate
             {
                 if (item != null)
                 {
-                    //随机图案编号
-                    int random = Random.Range(0, randomSprites.Length);
-                    //设置图案
-                    item.curSpr = randomSprites[random];
-                    //设置图片
-                    item.curtImg.sprite = randomSprites[random];
+                    //随机数
+                    int random = Random.Range(0, (int)Util.EItemType.Num);
+                    item.Init(item.itemRow, item.itemColumn, (Util.EItemType)random);
                 }
             }
         }

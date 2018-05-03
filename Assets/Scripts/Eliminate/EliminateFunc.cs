@@ -71,7 +71,8 @@ namespace Eliminate
                 //如果Item不合法，跳过
                 if (tempItemList[i] == null)
                     continue;
-                if (current.curSpr == tempItemList[i].curSpr)
+                //if (current.curSpr == tempItemList[i].curSpr)
+                if (current.curType == tempItemList[i].curType)
                 {
                     FillSameItemsList(ref sameItemsList, tempItemList[i], allItems);
                 }
@@ -207,7 +208,7 @@ namespace Eliminate
         private bool CheckItemsInterval(bool isHorizontal, Item begin, Item end, Item[,] allItems)
         {
             //获取图案
-            Sprite spr = begin.curSpr;
+            Util.EItemType type = begin.curType;
             //如果是横向
             if (isHorizontal)
             {
@@ -227,7 +228,7 @@ namespace Eliminate
                     if (allItems[begin.itemRow, i] == null)
                         return false;
                     //如果中间有间隙（有图案不一致的）
-                    if (allItems[begin.itemRow, i].curSpr != spr)
+                    if (allItems[begin.itemRow, i].curType != type)
                     {
                         return false;
                     }
@@ -249,7 +250,7 @@ namespace Eliminate
                 for (int i = beginIndex + 1; i < endIndex; i++)
                 {
                     //如果中间有间隙（有图案不一致的）
-                    if (allItems[i, begin.itemColumn].curSpr != spr)
+                    if (allItems[i, begin.itemColumn].curType != type)
                     {
                         return false;
                     }
