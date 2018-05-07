@@ -5,20 +5,20 @@ using UnityEngine.UI;
 
 namespace Eliminate
 {
-    public class ItemManager : MonoSingletion<ItemManager>
+    public class BlockManager : MonoSingletion<BlockManager>
     {
-
-
+        
+        IEliminate eliminateFunc;
         //随机图案
         //public Sprite[] randomSprites;
-        public Transform itemParent;
+        public Transform blockParent;
         //行列
         public int tableRow = 5;
         public int tableColumn = 5;
         //偏移量
         public Vector2 offset = new Vector2(0, 0);
         //所有的Item
-        public Item[,] allItems;
+        public Block[,] allBlocks;
         //所有Item的坐标
         public Vector3[,] allPos;
         //相同Item列表
@@ -33,26 +33,28 @@ namespace Eliminate
         public bool allBoom = false;
 
         //ITEM的边长
-        private float itemSize = 0;
+        private float BlockSize = 0;
 
 
         void Awake()
         {
-            allItems = new Item[tableRow, tableColumn];
+            allBlocks = new Block[tableRow, tableColumn];
             allPos = new Vector3[tableRow, tableColumn];
             // sameItemsList = new List<Item>();
             //boomList = new List<Item>();
-            var canvas = Resources.Load<GameObject>("Prefabs/ItemCanvas");
-            itemParent = GameObject.Instantiate(canvas).transform.GetChild(0).transform;
+            var canvas = Resources.Load<GameObject>("Prefabs/BlockCanvas");
+            blockParent = GameObject.Instantiate(canvas).transform.GetChild(0).transform;
+
+            eliminateFunc = new EliminateFunction();
         }
 
         /// <summary>
         /// 获取Item边长
         /// </summary>
         /// <returns>The item size.</returns>
-        private float GetItemSize()
+        private float GetBlockSize()
         {
-            return Resources.Load<GameObject>(Util.ResourcesPrefab + Util.Item).
+            return Resources.Load<GameObject>(Util.ResourcesPrefab + Util.Block).
                 GetComponent<RectTransform>().rect.height;
         }
 
@@ -72,54 +74,54 @@ namespace Eliminate
         {
             //LoadResource();
             //获取Item边长
-            itemSize = GetItemSize();
+            BlockSize = GetBlockSize();
             //生成ITEM
             for (int i = 0; i < tableRow; i++)
             {
                 for (int j = 0; j < tableColumn; j++)
                 {
                     //生成
-                    GameObject currentItem =
-                        ObjectPool.instance.GetGameObject(Util.Item, itemParent);
+                    GameObject currentBlock =
+                        ObjectPool.instance.GetGameObject(Util.Block, blockParent);
                     //设置坐标
-                    currentItem.transform.localPosition =
-                        new Vector3(j * itemSize, i * itemSize, 0) + new Vector3(offset.x, offset.y, 0);
+                    currentBlock.transform.localPosition =
+                        new Vector3(j * BlockSize, i * BlockSize, 0) + new Vector3(offset.x, offset.y, 0);
                     //随机图案编号
-                    int random = Random.Range(0, (int)Util.EItemType.Num);
+                    int random = Random.Range(0, (int)Util.EBlockType.Num);
                     //获取Item组件
-                    Item current = currentItem.GetComponent<Item>();
-                    current.Init(i, j, (Util.EItemType)random);
+                    Block current = currentBlock.GetComponent<Block>();
+                    current.Init(i, j, (Util.EBlockType)random);
 
                     //保存到数组
-                    allItems[i, j] = current;
+                    allBlocks[i, j] = current;
                     //记录世界坐标
-                    allPos[i, j] = currentItem.transform.position;
+                    allPos[i, j] = currentBlock.transform.position;
                 }
             }
             AllBoom();
         }
         public void AllBoom()
         {
-            EliminateFunc func = new EliminateFunc();
-            List<Item> checkItemList = new List<Item>();
-            foreach (var item in allItems)
+            //EliminateFunc func = new EliminateFunc();
+            List<Block> checkBlockList = new List<Block>();
+            foreach (var block in allBlocks)
             {
-                checkItemList.Add(item);
+                checkBlockList.Add(block);
 
             }
 
-            var eliminatelist = func.SelectEliminateItemList(checkItemList, allItems);
+            var eliminatelist = eliminateFunc.CheckEliminate(checkBlockList, allBlocks);
             Eliminate(eliminatelist);
         }
 
-        public void Eliminate(List<Item> eliminateList)
+        public void Eliminate(List<Block> eliminateList)
         {
             //有消除
             bool hasBoom = false;
             if (eliminateList.Count > 0)
             {
                 //创	建临时的BoomList
-                List<Item> tempBoomList = new List<Item>();
+                List<Block> tempBoomList = new List<Block>();
                 //转移到临时列表
                 tempBoomList.AddRange(eliminateList);
                 //开启处理BoomList的协程
@@ -130,10 +132,10 @@ namespace Eliminate
 
             if (!hasBoom)
             {
-                EliminateFunc func = new EliminateFunc();
-                if (!func.IsNextCanEliminate(allItems))
+                //EliminateFunc func = new EliminateFunc();
+                if (!eliminateFunc.CheckImpasse(allBlocks))
                 {
-                    UpsetItem();
+                    UpsetBlock();
                     AllBoom();
                     Debug.Log("here  cant eliminate!");
                 }
@@ -148,18 +150,18 @@ namespace Eliminate
         /// 处理BoomList
         /// </summary>
         /// <returns>The boom list.</returns>
-        IEnumerator ManipulateBoomList(List<Item> tempBoomList)
+        IEnumerator ManipulateBoomList(List<Block> tempBoomList)
         {
-            foreach (var item in tempBoomList)
+            foreach (var block in tempBoomList)
             {
-                item.hasCheck = true;
-                item.GetComponent<Image>().color = randomColor * 2;
+                block.hasCheck = true;
+                block.GetComponent<Image>().color = randomColor * 2;
                 //离开动画
                 //		item.GetComponent<AnimatedButton> ().Exit ();
                 //Boom声音
                 //			AudioManager.instance.PlayMagicalAudio();
                 //将被消除的Item在全局列表中移除
-                allItems[item.itemRow, item.itemColumn] = null;
+                allBlocks[block.blockRow, block.blockColumn] = null;
             }
             //检测Item是否已经开发播放离开动画
             // while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
@@ -171,14 +173,14 @@ namespace Eliminate
             yield return new WaitForSeconds(0.2f);
 
             //回收Item
-            foreach (var item in tempBoomList)
+            foreach (var block in tempBoomList)
             {
-                item.EmilinateSelf();
+                block.EmilinateSelf();
                 //item.hasCheck = false;
                 //ObjectPool.instance.ResetGameObject(item.gameObject);
             }
             //开启下落
-            yield return StartCoroutine(ItemsDrop());
+            yield return StartCoroutine(BlocksDrop());
             //延迟0.38秒（这里应该是在播放下落）
             //yield return new WaitForSeconds (0.38f);
 
@@ -189,7 +191,7 @@ namespace Eliminate
         /// Items下落
         /// </summary>
         /// <returns>The drop.</returns>
-        IEnumerator ItemsDrop()
+        IEnumerator BlocksDrop()
         {
             isOperation = true;
             //逐列检测
@@ -198,37 +200,37 @@ namespace Eliminate
                 //计数器
                 int count = 0;
                 //下落队列
-                Queue<Item> dropQueue = new Queue<Item>();
+                Queue<Block> dropQueue = new Queue<Block>();
                 //逐行检测
                 for (int j = 0; j < tableRow; j++)
                 {
-                    if (allItems[j, i] != null)
+                    if (allBlocks[j, i] != null)
                     {
                         //计数
                         count++;
                         //放入队列
-                        dropQueue.Enqueue(allItems[j, i]);
+                        dropQueue.Enqueue(allBlocks[j, i]);
                     }
                 }
                 //下落
                 for (int k = 0; k < count; k++)
                 {
                     //获取要下落的Item
-                    Item current = dropQueue.Dequeue();
+                    Block current = dropQueue.Dequeue();
                     //修改全局数组(原位置情况)
-                    allItems[current.itemRow, current.itemColumn] = null;
+                    allBlocks[current.blockRow, current.blockColumn] = null;
                     //修改Item的行数
-                    current.itemRow = k;
+                    current.blockRow = k;
                     //修改全局数组(填充新位置)
-                    allItems[current.itemRow, current.itemColumn] = current;
+                    allBlocks[current.blockRow, current.blockColumn] = current;
                     //下落
-                    current.CurrentItemDrop(allPos[current.itemRow, current.itemColumn]);
+                    current.CurrentBlockDrop(allPos[current.blockRow, current.blockColumn]);
                 }
             }
 
             //yield return new WaitForSeconds (0.2f);
 
-            CreateNewItem();
+            CreateNewBlock();
             AllBoom();
             yield return new WaitForSeconds(0.2f);
 
@@ -239,41 +241,41 @@ namespace Eliminate
         /// 生成新的Item
         /// </summary>
         /// <returns>The new item.</returns>
-        public void CreateNewItem()
+        public void CreateNewBlock()
         {
             isOperation = true;
             for (int i = 0; i < tableColumn; i++)
             {
                 int count = 0;
-                Queue<GameObject> newItemQueue = new Queue<GameObject>();
+                Queue<GameObject> newBlockQueue = new Queue<GameObject>();
                 for (int j = 0; j < tableRow; j++)
                 {
-                    if (allItems[j, i] == null)
+                    if (allBlocks[j, i] == null)
                     {
                         //生成一个Item
-                        GameObject current = ObjectPool.instance.GetGameObject(Util.Item, itemParent);
+                        GameObject current = ObjectPool.instance.GetGameObject(Util.Block, blockParent);
                         current.transform.position = allPos[tableRow - 1, i];
                         //随机数
-                        int random = Random.Range(0, (int)Util.EItemType.Num);
-                        current.GetComponent<Item>().Init(tableRow - 1, i, (Util.EItemType)random);
+                        int random = Random.Range(0, (int)Util.EBlockType.Num);
+                        current.GetComponent<Block>().Init(tableRow - 1, i, (Util.EBlockType)random);
 
                         // //修改脚本中的图片
                         // //                    currentItem.curSpr = randomSprites[random];
                         // //修改真实图片
                         // currentItem.curtImg.sprite = Util.GetSpriteAssetsByType(currentItem.curType);
-                        newItemQueue.Enqueue(current);
+                        newBlockQueue.Enqueue(current);
                         count++;
                     }
                 }
                 for (int k = 0; k < count; k++)
                 {
                     //获取Item组件
-                    Item currentItem = newItemQueue.Dequeue().GetComponent<Item>();
+                    Block currentBlock = newBlockQueue.Dequeue().GetComponent<Block>();
 
                     //获取要移动的行数
                     int r = tableRow - count + k;
                     //移动
-                    currentItem.ItemMove(r, i, allPos[r, i]);
+                    currentBlock.BlockMove(r, i, allPos[r, i]);
                 }
             }
         }
@@ -285,9 +287,9 @@ namespace Eliminate
         // /// <returns><c>true</c>, if RC legal was checked, <c>false</c> otherwise.</returns>
         // /// <param name="itemRow">Item row.</param>
         // /// <param name="itemColumn">Item column.</param>
-        public bool CheckRCLegal(int itemRow, int itemColumn)
+        public bool CheckRCLegal(int row, int column)
         {
-            if (itemRow >= 0 && itemRow < tableRow && itemColumn >= 0 && itemColumn < tableColumn)
+            if (row >= 0 && row < tableRow && column >= 0 && column < tableColumn)
                 return true;
             return false;
         }
@@ -296,15 +298,15 @@ namespace Eliminate
         /// 洗牌
         /// </summary>
         /// <returns><c>true</c>, if RC legal was checked, <c>false</c> otherwise.</returns>
-        public void UpsetItem()
+        public void UpsetBlock()
         {
-            foreach (var item in allItems)
+            foreach (var block in allBlocks)
             {
-                if (item != null)
+                if (block != null)
                 {
                     //随机数
-                    int random = Random.Range(0, (int)Util.EItemType.Num);
-                    item.Init(item.itemRow, item.itemColumn, (Util.EItemType)random);
+                    int random = Random.Range(0, (int)Util.EBlockType.Num);
+                    block.Init(block.blockRow, block.blockColumn, (Util.EBlockType)random);
                 }
             }
         }

@@ -9,28 +9,28 @@ namespace Eliminate
     ///</summary>
     public class EliminateFunc : ICheckEliminateAlgorithm
     {
-        public List<Item> SelectEliminateItemList(List<Item> checkItemList, Item[,] allItems)
+        public List<Block> SelectEliminateBlockList(List<Block> checkBlockList, Block[,] allBlocks)
         {
-            List<Item> ret = new List<Item>();
+            List<Block> ret = new List<Block>();
             EliminateTypeFunc func = new EliminateTypeFunc();
 
 
-            foreach (var item in checkItemList)
+            foreach (var block in checkBlockList)
             {
                 //指定位置的Item存在，且没有被检测过
-                if (item && !item.hasCheck)
+                if (block && !block.hasCheck)
                 {
                     //检测周围的消除
-                    List<Item> sameItemsList = new List<Item>();
-                    FillSameItemsList(ref sameItemsList, item, allItems);
-                    var eliminateList = GetEliminateList(item, sameItemsList, allItems);
+                    List<Block> sameBlocksList = new List<Block>();
+                    FillSameBlocksList(ref sameBlocksList, block, allBlocks);
+                    var eliminateList = GetEliminateList(block, sameBlocksList, allBlocks);
                     // //避免重复加入列表
                     for (int i = 0; i < eliminateList.Count; i++)
                     {
                         if (!ret.Contains(eliminateList[i]))
                         {
                             ret.Add(eliminateList[i]);
-                            item.curEliminateType = func.CheckEliminateType(eliminateList[i], eliminateList);
+                            block.curEliminateType = func.CheckEliminateType(eliminateList[i], eliminateList);
                         }
                     }
                     //ret = eliminateList;
@@ -38,14 +38,14 @@ namespace Eliminate
             }
             return ret;
         }
-        public bool IsNextCanEliminate(Item[,] allItems)
+        public bool IsNextCanEliminate(Block[,] allBlocks)
         {
-            foreach (var item in allItems)
+            foreach (var block in allBlocks)
             {
-                if (IsMoveCanEliminate(item, Vector2.up, allItems)
-                || IsMoveCanEliminate(item, Vector2.down, allItems)
-                || IsMoveCanEliminate(item, Vector2.left, allItems)
-                || IsMoveCanEliminate(item, Vector2.right, allItems))
+                if (IsMoveCanEliminate(block, Vector2.up, allBlocks)
+                || IsMoveCanEliminate(block, Vector2.down, allBlocks)
+                || IsMoveCanEliminate(block, Vector2.left, allBlocks)
+                || IsMoveCanEliminate(block, Vector2.right, allBlocks))
                 {
                     return true;
                 }
@@ -56,65 +56,65 @@ namespace Eliminate
         /// <summary>
         /// 填充相同Item列表  
         /// </summary>
-        private void FillSameItemsList(ref List<Item> sameItemsList, Item current, Item[,] allItems)
+        private void FillSameBlocksList(ref List<Block> sameBlocksList, Block current, Block[,] allBlocks)
         {
             //如果已存在，跳过
-            if (sameItemsList.Contains(current))
+            if (sameBlocksList.Contains(current))
                 return;
             //添加到列表
-            sameItemsList.Add(current);
+            sameBlocksList.Add(current);
             //上下左右的Item
-            List<Item> tempItemList = GetAroundItem(current, allItems);
+            List<Block> tempBlockList = GetAroundBlock(current, allBlocks);
 
-            for (int i = 0; i < tempItemList.Count; i++)
+            for (int i = 0; i < tempBlockList.Count; i++)
             {
                 //如果Item不合法，跳过
-                if (tempItemList[i] == null)
+                if (tempBlockList[i] == null)
                     continue;
                 //if (current.curSpr == tempItemList[i].curSpr)
-                if (current.curType == tempItemList[i].curType)
+                if (current.curType == tempBlockList[i].curType)
                 {
-                    FillSameItemsList(ref sameItemsList, tempItemList[i], allItems);
+                    FillSameBlocksList(ref sameBlocksList, tempBlockList[i], allBlocks);
                 }
             }
         }
 
-        private List<Item> GetEliminateList(Item current, List<Item> sameItemsList, Item[,] allItems)
+        private List<Block> GetEliminateList(Block current, List<Block> sameBlocksList, Block[,] allBlocks)
         {
-            List<Item> eliminateList = new List<Item>();
+            List<Block> eliminateList = new List<Block>();
             //计数器
             int rowCount = 0;
             int columnCount = 0;
             //临时列表
-            List<Item> rowTempList = new List<Item>();
-            List<Item> columnTempList = new List<Item>();
+            List<Block> rowTempList = new List<Block>();
+            List<Block> columnTempList = new List<Block>();
             ///横向纵向检测
-            foreach (var item in sameItemsList)
+            foreach (var block in sameBlocksList)
             {
                 //如果在同一行
-                if (item.itemRow == current.itemRow)
+                if (block.blockRow == current.blockRow)
                 {
                     //判断该点与Curren中间有无间隙
-                    bool rowCanBoom = CheckItemsInterval(true, current, item, allItems);
+                    bool rowCanBoom = CheckBlocksInterval(true, current, block, allBlocks);
                     if (rowCanBoom)
                     {
                         //计数
                         rowCount++;
                         //添加到行临时列表
-                        rowTempList.Add(item);
+                        rowTempList.Add(block);
                     }
                 }
                 //如果在同一列
-                if (item.itemColumn == current.itemColumn)
+                if (block.blockColumn == current.blockColumn)
                 {
                     //判断该点与Curren中间有无间隙
-                    bool columnCanBoom = CheckItemsInterval(false, current, item, allItems);
+                    bool columnCanBoom = CheckBlocksInterval(false, current, block, allBlocks);
                     if (columnCanBoom)
                     {
                         //计数
                         columnCount++;
                         //添加到列临时列表
-                        columnTempList.Add(item);
+                        columnTempList.Add(block);
                     }
                 }
             }
@@ -150,16 +150,16 @@ namespace Eliminate
         /// 检测item向dir方向移动一格是否可消除
         /// </summary>
         /// <returns><c>true</c>, if can boom, <c>false</c> cant boom.</returns>
-        /// <param name="item">Item.</param>
+        /// <param name="block">Item.</param>
         /// <param name="dir">vector2.</param>
-        private bool IsMoveCanEliminate(Item item, Vector2 dir, Item[,] allItems)
+        private bool IsMoveCanEliminate(Block block, Vector2 dir, Block[,] allBlocks)
         {
 
-            int tableRow = allItems.GetLength(0);
-            int tableColumn = allItems.GetLength(1);
+            int tableRow = allBlocks.GetLength(0);
+            int tableColumn = allBlocks.GetLength(1);
             //获取目标行列
-            int targetRow = item.itemRow + System.Convert.ToInt32(dir.y);
-            int targetColumn = item.itemColumn + System.Convert.ToInt32(dir.x);
+            int targetRow = block.blockRow + System.Convert.ToInt32(dir.y);
+            int targetColumn = block.blockColumn + System.Convert.ToInt32(dir.x);
             //检测合法
             bool isLagal = CheckRCLegal(targetRow, targetColumn, tableRow, tableColumn);
             if (!isLagal)
@@ -167,34 +167,34 @@ namespace Eliminate
                 return false;
             }
             //获取目标
-            Item target = allItems[targetRow, targetColumn];
+            Block target = allBlocks[targetRow, targetColumn];
             //从全局列表中获取当前item，查看是否已经被消除，被消除后不能再交换
-            Item myItem = allItems[item.itemRow, item.itemColumn];
-            if (!target || !myItem)
+            Block myBlock = allBlocks[block.blockRow, block.blockColumn];
+            if (!target || !myBlock)
             {
                 return false;
             }
             //相互移动
-            target.ItemMove(item.itemRow, item.itemColumn, Vector3.zero, false);
-            item.ItemMove(targetRow, targetColumn, Vector3.zero, false);
+            target.BlockMove(block.blockRow, block.blockColumn, Vector3.zero, false);
+            block.BlockMove(targetRow, targetColumn, Vector3.zero, false);
 
             //返回值
             bool isok = true;
             //消除检测	
 
-            List<Item> sameItemsList = new List<Item>();
-            FillSameItemsList(ref sameItemsList, item, allItems);
-            var eliminateList = GetEliminateList(item, sameItemsList, allItems);
+            List<Block> sameBlocksList = new List<Block>();
+            FillSameBlocksList(ref sameBlocksList, block, allBlocks);
+            var eliminateList = GetEliminateList(block, sameBlocksList, allBlocks);
             isok = eliminateList.Count > 0 ? true : false;
 
             //还原	
             //临时行列
             int tempRow, tempColumn;
-            tempRow = myItem.itemRow;
-            tempColumn = myItem.itemColumn;
+            tempRow = myBlock.blockRow;
+            tempColumn = myBlock.blockColumn;
             //移动
-            item.ItemMove(target.itemRow, target.itemColumn, Vector3.zero, false);
-            target.ItemMove(tempRow, tempColumn, Vector3.zero, false);
+            block.BlockMove(target.blockRow, target.blockColumn, Vector3.zero, false);
+            target.BlockMove(tempRow, tempColumn, Vector3.zero, false);
 
             return isok;
         }
@@ -205,30 +205,30 @@ namespace Eliminate
         /// <param name="isHorizontal">是否是横向.</param>
         /// <param name="begin">检测起点.</param>
         /// <param name="end">检测终点.</param>
-        private bool CheckItemsInterval(bool isHorizontal, Item begin, Item end, Item[,] allItems)
+        private bool CheckBlocksInterval(bool isHorizontal, Block begin, Block end, Block[,] allBlocks)
         {
             //获取图案
-            Util.EItemType type = begin.curType;
+            Util.EBlockType type = begin.curType;
             //如果是横向
             if (isHorizontal)
             {
                 //起点终点列号
-                int beginIndex = begin.itemColumn;
-                int endIndex = end.itemColumn;
+                int beginIndex = begin.blockColumn;
+                int endIndex = end.blockColumn;
                 //如果起点在右，交换起点终点列号
                 if (beginIndex > endIndex)
                 {
-                    beginIndex = end.itemColumn;
-                    endIndex = begin.itemColumn;
+                    beginIndex = end.blockColumn;
+                    endIndex = begin.blockColumn;
                 }
                 //遍历中间的Item
                 for (int i = beginIndex + 1; i < endIndex; i++)
                 {
                     //异常处理（中间未生成，标识为不合法）
-                    if (allItems[begin.itemRow, i] == null)
+                    if (allBlocks[begin.blockRow, i] == null)
                         return false;
                     //如果中间有间隙（有图案不一致的）
-                    if (allItems[begin.itemRow, i].curType != type)
+                    if (allBlocks[begin.blockRow, i].curType != type)
                     {
                         return false;
                     }
@@ -238,19 +238,19 @@ namespace Eliminate
             else
             {
                 //起点终点行号
-                int beginIndex = begin.itemRow;
-                int endIndex = end.itemRow;
+                int beginIndex = begin.blockRow;
+                int endIndex = end.blockRow;
                 //如果起点在上，交换起点终点列号
                 if (beginIndex > endIndex)
                 {
-                    beginIndex = end.itemRow;
-                    endIndex = begin.itemRow;
+                    beginIndex = end.blockRow;
+                    endIndex = begin.blockRow;
                 }
                 //遍历中间的Item
                 for (int i = beginIndex + 1; i < endIndex; i++)
                 {
                     //如果中间有间隙（有图案不一致的）
-                    if (allItems[i, begin.itemColumn].curType != type)
+                    if (allBlocks[i, begin.blockColumn].curType != type)
                     {
                         return false;
                     }
@@ -258,52 +258,52 @@ namespace Eliminate
                 return true;
             }
         }
-        private List<Item> GetAroundItem(Item current, Item[,] allItems)
+        private List<Block> GetAroundBlock(Block current, Block[,] allBlocks)
         {
-            List<Item> items = new List<Item>();
-            int tableRow = allItems.GetLength(0);
-            int tableColumn = allItems.GetLength(1);
+            List<Block> blocks = new List<Block>();
+            int tableRow = allBlocks.GetLength(0);
+            int tableColumn = allBlocks.GetLength(1);
             //up
-            int row = current.itemRow + 1;
-            int column = current.itemColumn;
+            int row = current.blockRow + 1;
+            int column = current.blockColumn;
             if (CheckRCLegal(row, column, tableRow, tableColumn))
             {
-                items.Add(allItems[row, column]);
+                blocks.Add(allBlocks[row, column]);
             }
             //down
-            row = current.itemRow - 1;
-            column = current.itemColumn;
+            row = current.blockRow - 1;
+            column = current.blockColumn;
             if (CheckRCLegal(row, column, tableRow, tableColumn))
             {
-                items.Add(allItems[row, column]);
+                blocks.Add(allBlocks[row, column]);
             }
             //left
-            row = current.itemRow;
-            column = current.itemColumn - 1;
+            row = current.blockRow;
+            column = current.blockColumn - 1;
             if (CheckRCLegal(row, column, tableRow, tableColumn))
             {
-                items.Add(allItems[row, column]);
+                blocks.Add(allBlocks[row, column]);
             }
             //right
-            row = current.itemRow;
-            column = current.itemColumn + 1;
+            row = current.blockRow;
+            column = current.blockColumn + 1;
             if (CheckRCLegal(row, column, tableRow, tableColumn))
             {
-                items.Add(allItems[row, column]);
+                blocks.Add(allBlocks[row, column]);
             }
 
-            return items;
+            return blocks;
         }
 
         /// <summary>
         /// 检测行列是否合法
         /// </summary>
         /// <returns><c>true</c>, if RC legal was checked, <c>false</c> otherwise.</returns>
-        /// <param name="itemRow">Item row.</param>
-        /// <param name="itemColumn">Item column.</param>
-        public bool CheckRCLegal(int itemRow, int itemColumn, int tableRow, int tableColumn)
+        /// <param name="row">Item row.</param>
+        /// <param name="column">Item column.</param>
+        public bool CheckRCLegal(int row, int column, int tableRow, int tableColumn)
         {
-            if (itemRow >= 0 && itemRow < tableRow && itemColumn >= 0 && itemColumn < tableColumn)
+            if (row >= 0 && row < tableRow && column >= 0 && column < tableColumn)
                 return true;
             return false;
         }
@@ -314,7 +314,7 @@ namespace Eliminate
 
     public class EliminateTypeFunc : ICheckEliminateType
     {
-        public Util.EEliminateType CheckEliminateType(Item curItem, List<Item> checkItemList)
+        public Util.EEliminateType CheckEliminateType(Block curBlock, List<Block> checkBlockList)
         {
             // List<Item> leftList = new List<Item>();
             // List<Item> rightList = new List<Item>();
@@ -325,29 +325,29 @@ namespace Eliminate
             int topNum = 0;
             int bottomNum = 0;
 
-            var curRow = curItem.itemRow;
-            var curCloumn = curItem.itemColumn;
+            var curRow = curBlock.blockRow;
+            var curCloumn = curBlock.blockColumn;
 
-            for (int i = 0; i < checkItemList.Count; i++)
+            for (int i = 0; i < checkBlockList.Count; i++)
             {
-                if (checkItemList[i].itemRow == curRow)//同列
+                if (checkBlockList[i].blockRow == curRow)//同列
                 {
-                    if (checkItemList[i].itemColumn > curCloumn)//右边
+                    if (checkBlockList[i].blockColumn > curCloumn)//右边
                     {
                         rightNum++;
                     }
-                    else if (checkItemList[i].itemColumn < curCloumn)//左边
+                    else if (checkBlockList[i].blockColumn < curCloumn)//左边
                     {
                         leftNum++;
                     }
                 }
-                if (checkItemList[i].itemColumn == curCloumn)//同行
+                if (checkBlockList[i].blockColumn == curCloumn)//同行
                 {
-                    if (checkItemList[i].itemRow > curRow)//上边
+                    if (checkBlockList[i].blockRow > curRow)//上边
                     {
                         topNum++;
                     }
-                    else if (checkItemList[i].itemRow < curRow)//下边
+                    else if (checkBlockList[i].blockRow < curRow)//下边
                     {
                         bottomNum++;
                     }
@@ -390,5 +390,337 @@ namespace Eliminate
             return Util.EEliminateType.Default;
         }
     }
+
+    public class EliminateFunction : IEliminate
+    {
+        public void Init()
+        {
+
+        }
+
+        public List<Eliminate.Block> CheckEliminate(List<Eliminate.Block> checkBlockList, Eliminate.Block[,] allBlocks)
+        {
+
+            List<Block> ret = new List<Block>();
+            EliminateTypeFunc func = new EliminateTypeFunc();
+
+            foreach (var block in checkBlockList)
+            {
+                //指定位置的Item存在，且没有被检测过
+                if (block && !block.hasCheck)
+                {
+                    //检测周围的消除
+                    List<Block> sameBlocksList = new List<Block>();
+                    FillSameBlocksList(ref sameBlocksList, block, allBlocks);
+                    var eliminateList = GetEliminateList(block, sameBlocksList, allBlocks);
+                    // //避免重复加入列表
+                    for (int i = 0; i < eliminateList.Count; i++)
+                    {
+                        if (!ret.Contains(eliminateList[i]))
+                        {
+                            ret.Add(eliminateList[i]);
+                            block.curEliminateType = func.CheckEliminateType(eliminateList[i], eliminateList);
+                        }
+                    }
+                    //ret = eliminateList;
+                }
+            }
+            return ret;
+        }
+
+        public void DoEliminate()
+        {
+
+        }
+
+        public void CreateNewBlock()
+        {
+
+        }
+
+        public bool CheckImpasse(Eliminate.Block[,] allBlocks)
+        {
+            foreach (var block in allBlocks)
+            {
+                if (IsMoveCanEliminate(block, Vector2.up, allBlocks)
+                || IsMoveCanEliminate(block, Vector2.down, allBlocks)
+                || IsMoveCanEliminate(block, Vector2.left, allBlocks)
+                || IsMoveCanEliminate(block, Vector2.right, allBlocks))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void Idle()
+        {
+
+        }
+
+        public void Operation()
+        {
+
+        }
+
+
+
+
+        /// <summary>
+        /// 填充相同Item列表  
+        /// </summary>
+        private void FillSameBlocksList(ref List<Block> sameBlocksList, Block current, Block[,] allBlocks)
+        {
+            //如果已存在，跳过
+            if (sameBlocksList.Contains(current))
+                return;
+            //添加到列表
+            sameBlocksList.Add(current);
+            //上下左右的Item
+            List<Block> tempBlockList = GetAroundBlock(current, allBlocks);
+
+            for (int i = 0; i < tempBlockList.Count; i++)
+            {
+                //如果Item不合法，跳过
+                if (tempBlockList[i] == null)
+                    continue;
+                //if (current.curSpr == tempItemList[i].curSpr)
+                if (current.curType == tempBlockList[i].curType)
+                {
+                    FillSameBlocksList(ref sameBlocksList, tempBlockList[i], allBlocks);
+                }
+            }
+        }
+
+        private List<Block> GetEliminateList(Block current, List<Block> sameBlocksList, Block[,] allBlocks)
+        {
+            List<Block> eliminateList = new List<Block>();
+            //计数器
+            int rowCount = 0;
+            int columnCount = 0;
+            //临时列表
+            List<Block> rowTempList = new List<Block>();
+            List<Block> columnTempList = new List<Block>();
+            ///横向纵向检测
+            foreach (var block in sameBlocksList)
+            {
+                //如果在同一行
+                if (block.blockRow == current.blockRow)
+                {
+                    //判断该点与Curren中间有无间隙
+                    bool rowCanBoom = CheckBlocksInterval(true, current, block, allBlocks);
+                    if (rowCanBoom)
+                    {
+                        //计数
+                        rowCount++;
+                        //添加到行临时列表
+                        rowTempList.Add(block);
+                    }
+                }
+                //如果在同一列
+                if (block.blockColumn == current.blockColumn)
+                {
+                    //判断该点与Curren中间有无间隙
+                    bool columnCanBoom = CheckBlocksInterval(false, current, block, allBlocks);
+                    if (columnCanBoom)
+                    {
+                        //计数
+                        columnCount++;
+                        //添加到列临时列表
+                        columnTempList.Add(block);
+                    }
+                }
+            }
+            //横向消除
+            bool horizontalBoom = false;
+            //如果横向三个以上
+            if (rowCount > 2)
+            {
+                //将临时列表中的Item全部放入BoomList
+                eliminateList.AddRange(rowTempList);
+                //横向消除
+                horizontalBoom = true;
+            }
+            //如果纵向三个以上
+            if (columnCount > 2)
+            {
+                if (horizontalBoom)
+                {
+                    //剔除自己
+                    eliminateList.Remove(current);
+                }
+                //将临时列表中的Item全部放入BoomList
+                eliminateList.AddRange(columnTempList);
+            }
+            // for (int i = 0; i < eliminateList.Count && eliminateList.Count > 2; i++)
+            // {
+            //     eliminateList[i].hasCheck = true;
+            // }
+            return eliminateList;
+        }
+
+        /// <summary>
+        /// 检测item向dir方向移动一格是否可消除
+        /// </summary>
+        /// <returns><c>true</c>, if can boom, <c>false</c> cant boom.</returns>
+        /// <param name="block">Item.</param>
+        /// <param name="dir">vector2.</param>
+        private bool IsMoveCanEliminate(Block block, Vector2 dir, Block[,] allBlocks)
+        {
+
+            int tableRow = allBlocks.GetLength(0);
+            int tableColumn = allBlocks.GetLength(1);
+            //获取目标行列
+            int targetRow = block.blockRow + System.Convert.ToInt32(dir.y);
+            int targetColumn = block.blockColumn + System.Convert.ToInt32(dir.x);
+            //检测合法
+            bool isLagal = CheckRCLegal(targetRow, targetColumn, tableRow, tableColumn);
+            if (!isLagal)
+            {
+                return false;
+            }
+            //获取目标
+            Block target = allBlocks[targetRow, targetColumn];
+            //从全局列表中获取当前item，查看是否已经被消除，被消除后不能再交换
+            Block myBlock = allBlocks[block.blockRow, block.blockColumn];
+            if (!target || !myBlock)
+            {
+                return false;
+            }
+            //相互移动
+            target.BlockMove(block.blockRow, block.blockColumn, Vector3.zero, false);
+            block.BlockMove(targetRow, targetColumn, Vector3.zero, false);
+
+            //返回值
+            bool isok = true;
+            //消除检测	
+
+            List<Block> sameBlocksList = new List<Block>();
+            FillSameBlocksList(ref sameBlocksList, block, allBlocks);
+            var eliminateList = GetEliminateList(block, sameBlocksList, allBlocks);
+            isok = eliminateList.Count > 0 ? true : false;
+
+            //还原	
+            //临时行列
+            int tempRow, tempColumn;
+            tempRow = myBlock.blockRow;
+            tempColumn = myBlock.blockColumn;
+            //移动
+            block.BlockMove(target.blockRow, target.blockColumn, Vector3.zero, false);
+            target.BlockMove(tempRow, tempColumn, Vector3.zero, false);
+
+            return isok;
+        }
+
+        /// <summary>
+        /// 检测两个Item之间是否有间隙（图案不一致）
+        /// </summary>
+        /// <param name="isHorizontal">是否是横向.</param>
+        /// <param name="begin">检测起点.</param>
+        /// <param name="end">检测终点.</param>
+        private bool CheckBlocksInterval(bool isHorizontal, Block begin, Block end, Block[,] allBlocks)
+        {
+            //获取图案
+            Util.EBlockType type = begin.curType;
+            //如果是横向
+            if (isHorizontal)
+            {
+                //起点终点列号
+                int beginIndex = begin.blockColumn;
+                int endIndex = end.blockColumn;
+                //如果起点在右，交换起点终点列号
+                if (beginIndex > endIndex)
+                {
+                    beginIndex = end.blockColumn;
+                    endIndex = begin.blockColumn;
+                }
+                //遍历中间的Item
+                for (int i = beginIndex + 1; i < endIndex; i++)
+                {
+                    //异常处理（中间未生成，标识为不合法）
+                    if (allBlocks[begin.blockRow, i] == null)
+                        return false;
+                    //如果中间有间隙（有图案不一致的）
+                    if (allBlocks[begin.blockRow, i].curType != type)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                //起点终点行号
+                int beginIndex = begin.blockRow;
+                int endIndex = end.blockRow;
+                //如果起点在上，交换起点终点列号
+                if (beginIndex > endIndex)
+                {
+                    beginIndex = end.blockRow;
+                    endIndex = begin.blockRow;
+                }
+                //遍历中间的Item
+                for (int i = beginIndex + 1; i < endIndex; i++)
+                {
+                    //如果中间有间隙（有图案不一致的）
+                    if (allBlocks[i, begin.blockColumn].curType != type)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        private List<Block> GetAroundBlock(Block current, Block[,] allBlocks)
+        {
+            List<Block> blocks = new List<Block>();
+            int tableRow = allBlocks.GetLength(0);
+            int tableColumn = allBlocks.GetLength(1);
+            //up
+            int row = current.blockRow + 1;
+            int column = current.blockColumn;
+            if (CheckRCLegal(row, column, tableRow, tableColumn))
+            {
+                blocks.Add(allBlocks[row, column]);
+            }
+            //down
+            row = current.blockRow - 1;
+            column = current.blockColumn;
+            if (CheckRCLegal(row, column, tableRow, tableColumn))
+            {
+                blocks.Add(allBlocks[row, column]);
+            }
+            //left
+            row = current.blockRow;
+            column = current.blockColumn - 1;
+            if (CheckRCLegal(row, column, tableRow, tableColumn))
+            {
+                blocks.Add(allBlocks[row, column]);
+            }
+            //right
+            row = current.blockRow;
+            column = current.blockColumn + 1;
+            if (CheckRCLegal(row, column, tableRow, tableColumn))
+            {
+                blocks.Add(allBlocks[row, column]);
+            }
+
+            return blocks;
+        }
+
+        /// <summary>
+        /// 检测行列是否合法
+        /// </summary>
+        /// <returns><c>true</c>, if RC legal was checked, <c>false</c> otherwise.</returns>
+        /// <param name="row">Item row.</param>
+        /// <param name="column">Item column.</param>
+        public bool CheckRCLegal(int row, int column, int tableRow, int tableColumn)
+        {
+            if (row >= 0 && row < tableRow && column >= 0 && column < tableColumn)
+                return true;
+            return false;
+        }
+    }
+
 
 }

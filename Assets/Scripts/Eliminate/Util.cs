@@ -11,37 +11,37 @@ public class Util
     //目录
     public const string ResourcesPrefab = "Prefabs/";
     //文件名称
-    public const string Item = "Item";
+    public const string Block = "Block";
 
     //动画参数名称
     public const string Pressed = "Pressed";
     public const string Exit = "Exit";
 
     //参数
-    public static float ItemMoveTime = 0.2f;
-    public static float ItemDropTime = 0.2f;
+    public static float BlockMoveTime = 0.2f;
+    public static float BlockDropTime = 0.2f;
 
-    public static Dictionary<EItemType, Sprite> randomSprites = new Dictionary<EItemType, Sprite>();
-    public static Sprite GetSpriteAssetsByType(EItemType type)
+    public static Dictionary<EBlockType, Sprite> randomSprites = new Dictionary<EBlockType, Sprite>();
+    public static Sprite GetSpriteAssetsByType(EBlockType type)
     {
         Sprite sprite = null;
         if (!randomSprites.ContainsKey(type))
         {
             switch (type)
             {
-                case EItemType.Apple:
+                case EBlockType.Apple:
                     sprite = Resources.Load<Sprite>("Texture/Gift");
                     break;
-                case EItemType.Banana:
+                case EBlockType.Banana:
                     sprite = Resources.Load<Sprite>("Texture/Health");
                     break;
-                case EItemType.Grape:
+                case EBlockType.Grape:
                     sprite = Resources.Load<Sprite>("Texture/LifePreserver");
                     break;
-                case EItemType.Lemon:
+                case EBlockType.Lemon:
                     sprite = Resources.Load<Sprite>("Texture/Shield");
                     break;
-                case EItemType.Pear:
+                case EBlockType.Pear:
                     sprite = Resources.Load<Sprite>("Texture/Strawberry");
                     break;
             }
@@ -50,8 +50,8 @@ public class Util
 
         return randomSprites[type];
     }
-    //item类型
-    public enum EItemType
+    //block类型
+    public enum EBlockType
     {
 		//None = -1,
         //普通可消除类型
@@ -62,7 +62,7 @@ public class Util
         Lemon,
 		Num,
     }
-    public enum EItemAttribute
+    public enum EBlockAttribute
     {
         None = 0,
         Ice,

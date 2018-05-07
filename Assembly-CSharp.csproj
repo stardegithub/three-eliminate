@@ -47,12 +47,11 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\Scripts\Eliminate\AudioManager.cs" />
+     <Compile Include="Assets\Scripts\Eliminate\Block.cs" />
+     <Compile Include="Assets\Scripts\Eliminate\BlockManager.cs" />
      <Compile Include="Assets\Scripts\Eliminate\EliminateFunc.cs" />
      <Compile Include="Assets\Scripts\Eliminate\EliminateInterface.cs" />
      <Compile Include="Assets\Scripts\Eliminate\GameController.cs" />
-     <Compile Include="Assets\Scripts\Eliminate\Item.cs" />
-     <Compile Include="Assets\Scripts\Eliminate\ItemBase.cs" />
-     <Compile Include="Assets\Scripts\Eliminate\ItemManager.cs" />
      <Compile Include="Assets\Scripts\Eliminate\ObjectPool.cs" />
      <Compile Include="Assets\Scripts\Eliminate\Util.cs" />
      <Compile Include="Assets\Scripts\Other\MonoSingletion.cs" />

@@ -7,12 +7,12 @@ public class GameController : MonoBehaviour {
 
 	//单例
 	public static GameController instance;
-	private ItemManager itemManager; 
+	private BlockManager blockManager; 
 
 	void Awake()
 	{
 		instance = this;
-		itemManager = ItemManager.Instance;
+		blockManager = BlockManager.Instance;
 	}
 
 	/// <summary>
@@ -25,7 +25,7 @@ public class GameController : MonoBehaviour {
 	}
 	private void InitGame()
 	{
-		itemManager.InitGame();
+		blockManager.InitGame();
 	}
 	void Update()
 	{
