@@ -175,8 +175,10 @@ namespace Eliminate
                 return false;
             }
             //相互移动
-            target.BlockMove(block.blockRow, block.blockColumn, Vector3.zero, false);
-            block.BlockMove(targetRow, targetColumn, Vector3.zero, false);
+            // target.BlockMove(block.blockRow, block.blockColumn, Vector3.zero, false);
+            // block.BlockMove(targetRow, targetColumn, Vector3.zero, false);
+            target.BlockChange(block.blockRow, block.blockColumn);
+            block.BlockChange(targetRow, targetColumn);
 
             //返回值
             bool isok = true;
@@ -193,8 +195,10 @@ namespace Eliminate
             tempRow = myBlock.blockRow;
             tempColumn = myBlock.blockColumn;
             //移动
-            block.BlockMove(target.blockRow, target.blockColumn, Vector3.zero, false);
-            target.BlockMove(tempRow, tempColumn, Vector3.zero, false);
+            // block.BlockMove(target.blockRow, target.blockColumn, Vector3.zero, false);
+            // target.BlockMove(tempRow, tempColumn, Vector3.zero, false);
+            block.BlockChange(target.blockRow, target.blockColumn);
+            target.BlockChange(tempRow, tempColumn);
 
             return isok;
         }
@@ -393,8 +397,41 @@ namespace Eliminate
 
     public class EliminateFunction : IEliminate
     {
-        public void Init()
+        public Eliminate.BlockManagerInfo Init(int row, int colunm, List<Util.EBlockType> blockTypes, float size)
         {
+            Eliminate.BlockManagerInfo blockManagerInfo = new BlockManagerInfo();
+
+            var canvas = Resources.Load<GameObject>("Prefabs/BlockCanvas");
+            blockManagerInfo.blockParent = GameObject.Instantiate(canvas).transform.GetChild(0).transform;
+
+
+            blockManagerInfo.allBlocks = new Block[row, colunm];
+            blockManagerInfo.allPos = new Vector3[row, colunm];
+            Vector2 offset = new Vector2(0, 0);
+            //生成ITEM
+            for (int i = 0; i < row; i++)
+            {
+                for (int j = 0; j < colunm; j++)
+                {
+                    //生成
+                    GameObject currentBlock =
+                        ObjectPool.instance.GetGameObject(Util.Block, blockManagerInfo.blockParent);
+                    //设置坐标
+                    currentBlock.transform.localPosition =
+                        new Vector3(j * size, i * size, 0) + new Vector3(offset.x, offset.y, 0);
+                    //随机图案编号
+                    int random = Random.Range(0, (int)Util.EBlockType.Num);
+                    //获取Item组件
+                    Block current = currentBlock.GetComponent<Block>();
+                    current.Init(i, j, (Util.EBlockType)random);
+
+                    //保存到数组
+                    blockManagerInfo.allBlocks[i, j] = current;
+                    //记录世界坐标
+                    blockManagerInfo.allPos[i, j] = currentBlock.transform.position;
+                }
+            }
+            return blockManagerInfo;
 
         }
 
@@ -421,6 +458,7 @@ namespace Eliminate
                             ret.Add(eliminateList[i]);
                             block.curEliminateType = func.CheckEliminateType(eliminateList[i], eliminateList);
                         }
+                        eliminateList[i].hasCheck = true;
                     }
                     //ret = eliminateList;
                 }
@@ -428,13 +466,103 @@ namespace Eliminate
             return ret;
         }
 
-        public void DoEliminate()
+        public void DoEliminate(List<Eliminate.Block> eliminateList, Eliminate.Block[,] allBlocks)
         {
+            foreach (var block in eliminateList)
+            {
+                allBlocks[block.blockRow, block.blockColumn] = null;
+                block.EmilinateSelf();
+            }
+            //           yield return new WaitForSeconds(Util.BlockMoveTime);
 
+            //ManipulateEliminateList(eliminateList,allBlocks);
         }
+        // IEnumerator ManipulateEliminateList(List<Eliminate.Block> eliminateList, Eliminate.Block[,] allBlocks)
+        // {
+        //     foreach (var block in eliminateList)
+        //     {
+        //         allBlocks[block.blockRow, block.blockColumn] = null;
+        //         block.EmilinateSelf();
+        //     }
+        // }
 
-        public void CreateNewBlock()
+        public void GenerateBlocks(BlockManagerInfo blockManagerInfo)
         {
+            int tableRow = blockManagerInfo.allBlocks.GetLength(0);
+            int tableColumn = blockManagerInfo.allBlocks.GetLength(1);
+            //isOperation = true;
+            //逐列检测
+            for (int i = 0; i < tableColumn; i++)
+            {
+                //计数器
+                int count = 0;
+                //下落队列
+                Queue<Block> dropQueue = new Queue<Block>();
+                //逐行检测
+                for (int j = 0; j < tableRow; j++)
+                {
+                    if (blockManagerInfo.allBlocks[j, i] != null)
+                    {
+                        //计数
+                        count++;
+                        //放入队列
+                        dropQueue.Enqueue(blockManagerInfo.allBlocks[j, i]);
+                    }
+                }
+                //下落
+                for (int k = 0; k < count; k++)
+                {
+                    //获取要下落的Item
+                    Block current = dropQueue.Dequeue();
+                    //修改全局数组(原位置情况)
+                    blockManagerInfo.allBlocks[current.blockRow, current.blockColumn] = null;
+                    //修改Item的行数
+                    current.blockRow = k;
+                    //修改全局数组(填充新位置)
+                    blockManagerInfo.allBlocks[current.blockRow, current.blockColumn] = current;
+                    //下落
+                    current.CurrentBlockDrop(blockManagerInfo.allPos[current.blockRow, current.blockColumn]);
+                }
+            }
+
+            //yield return new WaitForSeconds (0.2f);
+
+            //CreateNewBlock();
+            //isOperation = true;
+            for (int i = 0; i < tableColumn; i++)
+            {
+                int count = 0;
+                Queue<GameObject> newBlockQueue = new Queue<GameObject>();
+                for (int j = 0; j < tableRow; j++)
+                {
+                    if (blockManagerInfo.allBlocks[j, i] == null)
+                    {
+                        //生成一个Item
+                        GameObject current = ObjectPool.instance.GetGameObject(Util.Block, blockManagerInfo.blockParent);
+                        current.transform.position = blockManagerInfo.allPos[tableRow - 1, i];
+                        //随机数
+                        int random = Random.Range(0, (int)Util.EBlockType.Num);
+                        current.GetComponent<Block>().Init(tableRow - 1, i, (Util.EBlockType)random);
+
+                        // //修改脚本中的图片
+                        // //                    currentItem.curSpr = randomSprites[random];
+                        // //修改真实图片
+                        // currentItem.curtImg.sprite = Util.GetSpriteAssetsByType(currentItem.curType);
+                        newBlockQueue.Enqueue(current);
+                        count++;
+                    }
+                }
+                for (int k = 0; k < count; k++)
+                {
+                    //获取Item组件
+                    Block currentBlock = newBlockQueue.Dequeue().GetComponent<Block>();
+
+                    //获取要移动的行数
+                    int r = tableRow - count + k;
+                    //移动
+                    currentBlock.BlockMove(r, i, blockManagerInfo.allPos[r, i]);
+                }
+            }
 
         }
 
@@ -447,10 +575,12 @@ namespace Eliminate
                 || IsMoveCanEliminate(block, Vector2.left, allBlocks)
                 || IsMoveCanEliminate(block, Vector2.right, allBlocks))
                 {
-                    return true;
+
+                    return false;
                 }
             }
-            return false;
+            UpsetBlock(allBlocks);
+            return true;
         }
 
         public void Idle()
@@ -458,12 +588,63 @@ namespace Eliminate
 
         }
 
-        public void Operation()
+        public void Operation(Eliminate.Block curBlock, Eliminate.Block targetBlock)
         {
+            //临时行列
+            int tempRow, tempColumn;
+            tempRow = curBlock.blockRow;
+            tempColumn = curBlock.blockColumn;
+            //相互移动
+            curBlock.BlockMove(targetBlock.blockRow, targetBlock.blockColumn, targetBlock.transform.position);
+            targetBlock.BlockMove(tempRow, tempColumn, curBlock.transform.position);
 
+
+            //开启协程
+            //BlockExchange(curBlock, target);
         }
 
 
+        // void BlockExchange(Eliminate.Block curBlock, Eliminate.Block targetBlock)
+        // {
+
+        //     //还原标志位
+        //     bool reduction = false;
+
+        //     //消除处理
+        //     EliminateFunc func = new EliminateFunc();
+        //     List<Block> checkBlockList = new List<Block>();
+        //     checkBlockList.Add(curBlock);
+        //     checkBlockList.Add(targetBlock);
+
+        //     var eliminateList = func.SelectEliminateBlockList(checkBlockList, BlockManager.Instance.BlockManagerInfo.allBlocks);
+
+        //     if (eliminateList.Count > 0)
+        //     {
+        //         BlockManager.Instance.EliminateBlock(eliminateList);
+        //         reduction = false;
+        //     }
+        //     else
+        //     {
+        //         reduction = true;
+        //     }
+        //     //还原
+        //     if (reduction)
+        //     {
+        //         //延迟
+        //         //yield return new WaitForSeconds(Util.BlockMoveTime);
+        //         //临时行列
+        //         int tempRow, tempColumn;
+        //         tempRow = curBlock.blockRow;
+        //         tempColumn = curBlock.blockColumn;
+        //         //移动
+        //         curBlock.BlockMove(targetBlock.blockRow, targetBlock.blockColumn, targetBlock.transform.position);
+        //         targetBlock.BlockMove(tempRow, tempColumn, curBlock.transform.position);
+        //         //延迟
+        //        // yield return new WaitForSeconds(Util.BlockMoveTime);
+        //         //操作完毕
+        //         BlockManager.Instance.isOperation = false;
+        //     }
+        // }
 
 
         /// <summary>
@@ -588,8 +769,11 @@ namespace Eliminate
                 return false;
             }
             //相互移动
-            target.BlockMove(block.blockRow, block.blockColumn, Vector3.zero, false);
-            block.BlockMove(targetRow, targetColumn, Vector3.zero, false);
+            // target.BlockMove(block.blockRow, block.blockColumn, Vector3.zero, false);
+            // block.BlockMove(targetRow, targetColumn, Vector3.zero, false);
+            target.BlockChange(block.blockRow, block.blockColumn);
+            block.BlockChange(targetRow, targetColumn);
+
 
             //返回值
             bool isok = true;
@@ -606,8 +790,10 @@ namespace Eliminate
             tempRow = myBlock.blockRow;
             tempColumn = myBlock.blockColumn;
             //移动
-            block.BlockMove(target.blockRow, target.blockColumn, Vector3.zero, false);
-            target.BlockMove(tempRow, tempColumn, Vector3.zero, false);
+            // block.BlockMove(target.blockRow, target.blockColumn, Vector3.zero, false);
+            // target.BlockMove(tempRow, tempColumn, Vector3.zero, false);
+            block.BlockChange(target.blockRow, target.blockColumn);
+            target.BlockChange(tempRow, tempColumn);
 
             return isok;
         }
@@ -720,6 +906,24 @@ namespace Eliminate
                 return true;
             return false;
         }
+
+        /// <summary>
+        /// 洗牌
+        /// </summary>
+        /// <returns><c>true</c>, if RC legal was checked, <c>false</c> otherwise.</returns>
+        public void UpsetBlock(Block[,] allBlocks)
+        {
+            foreach (var block in allBlocks)
+            {
+                if (block != null)
+                {
+                    //随机数
+                    int random = Random.Range(0, (int)Util.EBlockType.Num);
+                    block.Init(block.blockRow, block.blockColumn, (Util.EBlockType)random);
+                }
+            }
+        }
+
     }
 
 

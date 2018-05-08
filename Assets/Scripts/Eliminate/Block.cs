@@ -23,6 +23,7 @@ namespace Eliminate
         public Image curtImg;
         public Util.EBlockType curType;
         public Util.EEliminateType curEliminateType;
+        public bool isMoving = false;
 
         public void Awake()
         {
@@ -34,7 +35,7 @@ namespace Eliminate
             blockRow = row;
             blockColumn = column;
             curtImg.sprite = spr;
-//            curSpr = curtImg.sprite;
+            //            curSpr = curtImg.sprite;
             curType = type;
             curEliminateType = Util.EEliminateType.Default;
         }
@@ -46,7 +47,7 @@ namespace Eliminate
         {
             ObjectPool.instance.ResetGameObject(this.gameObject);
             hasCheck = false;
-          //  curType = Util.EItemType.Default;
+            //  curType = Util.EItemType.Default;
             curEliminateType = Util.EEliminateType.Default;
         }
         public void OnPointerDown(PointerEventData eventData)
@@ -57,105 +58,35 @@ namespace Eliminate
         public void OnPointerUp(PointerEventData eventData)
         {
             //如果其他人正在操作
-            if (BlockManager.Instance.isOperation)
+            if (BlockManager.Instance.isOperation || isMoving)
                 return;//返回
                        //正在操作
             BlockManager.Instance.isOperation = true;
             upPos = Input.mousePosition;
+
             //获取方向
             Vector2 dir = GetDirection();
-            //点击异常处理
-            if (dir.magnitude != 1)
-            {
-                BlockManager.Instance.isOperation = false;
-                return;
-            }
-            //开启协程
-            StartCoroutine(BlockExchange(dir));
+            BlockManager.Instance.OperateBlock(this, dir);
         }
 
-        /// <summary>
-        /// Bolck交换
-        /// </summary>
-        /// <returns>The exchange.</returns>
-        /// <param name="dir">Dir.</param>
-        IEnumerator BlockExchange(Vector2 dir)
-        {
-            //获取目标行列
-            int targetRow = blockRow + System.Convert.ToInt32(dir.y);
-            int targetColumn = blockColumn + System.Convert.ToInt32(dir.x);
-            //检测合法
-            bool isLagal = BlockManager.Instance.CheckRCLegal(targetRow, targetColumn);
-            if (!isLagal)
-            {
-                BlockManager.Instance.isOperation = false;
-                //不合法跳出
-                yield break;
-            }
-            //获取目标
-            Block target = BlockManager.Instance.allBlocks[targetRow, targetColumn];
-            //从全局列表中获取当前item，查看是否已经被消除，被消除后不能再交换
-            Block myBlock = BlockManager.Instance.allBlocks[blockRow, blockColumn];
-            if (!target || !myBlock)
-            {
-                BlockManager.Instance.isOperation = false;
-                //Item已经被消除
-                yield break;
-            }
-            //相互移动
-            target.BlockMove(blockRow, blockColumn, transform.position);
-            BlockMove(targetRow, targetColumn, target.transform.position);
-            //还原标志位
-            bool reduction = false;
-
-            //消除处理
-            EliminateFunc func = new EliminateFunc();
-            List<Block> checkBlockList = new List<Block>();
-            checkBlockList.Add(this);
-            checkBlockList.Add(target);
-            var eliminateList = func.SelectEliminateBlockList(checkBlockList, BlockManager.Instance.allBlocks);
-            if (eliminateList.Count > 0)
-            {
-                BlockManager.Instance.Eliminate(eliminateList);
-                reduction = false;
-            }
-            else
-            {
-                reduction = true;
-            }
-            //还原
-            if (reduction)
-            {
-                //延迟
-                yield return new WaitForSeconds(Util.BlockMoveTime);
-                //临时行列
-                int tempRow, tempColumn;
-                tempRow = myBlock.blockRow;
-                tempColumn = myBlock.blockColumn;
-                //移动
-                myBlock.BlockMove(target.blockRow, target.blockColumn, target.transform.position);
-                target.BlockMove(tempRow, tempColumn, myBlock.transform.position);
-                //延迟
-                yield return new WaitForSeconds(Util.BlockMoveTime);
-                //操作完毕
-                BlockManager.Instance.isOperation = false;
-            }
-        }
         /// <summary>
         /// Item的移动
         /// </summary>
-        public void BlockMove(int targetRow, int targetColumn, Vector3 pos, bool isNeedMove = true)
+        public void BlockMove(int targetRow, int targetColumn, Vector3 pos)
+        {
+            isMoving = true;
+            BlockChange(targetRow, targetColumn);
+            transform.DOMove(pos, Util.BlockMoveTime).OnComplete(delegate(){
+                isMoving = false;
+            });
+        }
+
+        public void BlockChange(int targetRow, int targetColumn)
         {
             //改行列
             blockRow = targetRow;
             blockColumn = targetColumn;
-            //改全局列表
-            BlockManager.Instance.allBlocks[targetRow, targetColumn] = this;
-            //移动
-            if (isNeedMove)
-            {
-                transform.DOMove(pos, Util.BlockMoveTime);
-            }
+            BlockManager.Instance.BlockManagerInfo.allBlocks[targetRow, targetColumn] = this;
         }
 
         /// <summary>
@@ -184,9 +115,79 @@ namespace Eliminate
         /// <param name="pos">Position.</param>
         public void CurrentBlockDrop(Vector3 pos)
         {
+            isMoving = true;
             //下落
-            transform.DOMove(pos, Util.BlockDropTime);
+            transform.DOMove(pos, Util.BlockDropTime).OnComplete(delegate(){
+                isMoving = false;
+            });
         }
 
+        //  /// <summary>
+        // /// Bolck交换
+        // /// </summary>
+        // /// <returns>The exchange.</returns>
+        // /// <param name="dir">Dir.</param>
+        // IEnumerator BlockExchange(Vector2 dir)
+        // {
+        //     //获取目标行列
+        //     int targetRow = blockRow + System.Convert.ToInt32(dir.y);
+        //     int targetColumn = blockColumn + System.Convert.ToInt32(dir.x);
+        //     //检测合法
+        //     bool isLagal = BlockManager.Instance.CheckRCLegal(targetRow, targetColumn);
+        //     if (!isLagal)
+        //     {
+        //         BlockManager.Instance.isOperation = false;
+        //         //不合法跳出
+        //         yield break;
+        //     }
+        //     //获取目标
+        //     Block target = BlockManager.Instance.BlockManagerInfo.allBlocks[targetRow, targetColumn];
+        //     //从全局列表中获取当前item，查看是否已经被消除，被消除后不能再交换
+        //     Block myBlock = BlockManager.Instance.BlockManagerInfo.allBlocks[blockRow, blockColumn];
+        //     if (!target || !myBlock)
+        //     {
+        //         BlockManager.Instance.isOperation = false;
+        //         //Item已经被消除
+        //         yield break;
+        //     }
+        //     //相互移动
+        //     target.BlockMove(blockRow, blockColumn, transform.position);
+        //     BlockMove(targetRow, targetColumn, target.transform.position);
+        //     //还原标志位
+        //     bool reduction = false;
+
+        //     //消除处理
+        //     EliminateFunc func = new EliminateFunc();
+        //     List<Block> checkBlockList = new List<Block>();
+        //     checkBlockList.Add(this);
+        //     checkBlockList.Add(target);
+        //     var eliminateList = func.SelectEliminateBlockList(checkBlockList, BlockManager.Instance.BlockManagerInfo.allBlocks);
+        //     if (eliminateList.Count > 0)
+        //     {
+        //         BlockManager.Instance.EliminateBlock(eliminateList);
+        //         reduction = false;
+        //     }
+        //     else
+        //     {
+        //         reduction = true;
+        //     }
+        //     //还原
+        //     if (reduction)
+        //     {
+        //         //延迟
+        //         yield return new WaitForSeconds(Util.BlockMoveTime);
+        //         //临时行列
+        //         int tempRow, tempColumn;
+        //         tempRow = myBlock.blockRow;
+        //         tempColumn = myBlock.blockColumn;
+        //         //移动
+        //         myBlock.BlockMove(target.blockRow, target.blockColumn, target.transform.position);
+        //         target.BlockMove(tempRow, tempColumn, myBlock.transform.position);
+        //         //延迟
+        //         yield return new WaitForSeconds(Util.BlockMoveTime);
+        //         //操作完毕
+        //         BlockManager.Instance.isOperation = false;
+        //     }
+        // }
     }
 }

@@ -30,18 +30,18 @@ public interface ICheckEliminateType
 
 public interface IEliminate
 {
-    void Init();
+    Eliminate.BlockManagerInfo Init(int row,int colunm,List<Util.EBlockType> blockTypes,float size);
 
     List<Eliminate.Block> CheckEliminate(List<Eliminate.Block> checkBlockList, Eliminate.Block[,] allBlocks);
 
-    void DoEliminate();
+    void DoEliminate(List<Eliminate.Block> eliminateBlockList, Eliminate.Block[,] allBlocks);
 
-    void CreateNewBlock();
+    void GenerateBlocks(Eliminate.BlockManagerInfo blockManagerInfo);
 
     bool CheckImpasse(Eliminate.Block[,] allBlocks);
 
     void Idle();
 
-    void Operation();
+    void Operation(Eliminate.Block curBlock,Eliminate.Block targetBlock);
 
 }
